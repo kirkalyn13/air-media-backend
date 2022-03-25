@@ -26,9 +26,38 @@ app.get('/videos/watch/:id', (req: Request, res: Response) =>{
         if(err){
             console.log(err)
         }else{
-            const videoPath: string = `./media/videos/${result[0].path}.mp4`
-            const videoStream: any = fs.createReadStream(videoPath)
-            videoStream.pipe(res)
+            try{
+                const range: any = req.headers.range
+                if(!range){
+                    res.status(400).send("Requires Range Header.")
+                }
+                const videoPath: string = `./media/videos/${result[0].path}.mp4`
+                const videoSize: number =  fs.statSync(videoPath).size
+                const CHUNK_SIZE: number = 10**9
+                const start: number = Number(range.replace(/\D/g, ""))
+                const end: number = Math.min(start + CHUNK_SIZE, videoSize - 1)
+                const contentLength: number = end - start + 1
+                type Headers = {
+                    "Content-Range": string,
+                    "Accept-Ranges": string,
+                    "Content-Length": number,
+                    "Content-Type": string,
+                }
+                const headers: Headers = {
+                    "Content-Range": `bytes ${start}-${end}/${videoSize}`,
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": contentLength,
+                    "Content-Type": "video/mp4",
+                    };
+                
+                
+                res.writeHead(206, headers);
+                const videoStream: any = fs.createReadStream(videoPath)
+                videoStream.pipe(res)
+            }catch(err){
+                console.log(err)
+            }
+            
         }
     })
 })
