@@ -19,6 +19,30 @@ const db: Connection = mysql.createConnection({
 
 })
 
+//Fetch All Available Videos
+app.get('/videos', (req: Request, res: Response) =>{
+    const videoQuery: string = 'SELECT videoID, title, genre FROM videos'
+    db.query(videoQuery,(err,result) => {
+        if(err){
+            console.log(err)
+        }else{
+            res.send(result)
+        }
+    })
+})
+
+//Fetch All Available Music
+app.get('/music', (req: Request, res: Response) =>{
+    const musicQuery: string = 'SELECT musicID, title, artist, genre FROM music'
+    db.query(musicQuery,(err,result) => {
+        if(err){
+            console.log(err)
+        }else{
+            res.send(result)
+        }
+    })
+})
+
 //Stream Video
 app.get('/videos/watch/:id', (req: Request, res: Response) =>{
     const videoQuery: string = `SELECT path FROM videos WHERE videoID=${req.params.id}`
@@ -62,26 +86,45 @@ app.get('/videos/watch/:id', (req: Request, res: Response) =>{
     })
 })
 
-//Fetch All Available Videos
-app.get('/videos', (req: Request, res: Response) =>{
-    const videoQuery: string = 'SELECT videoID, title, genre FROM videos'
-    db.query(videoQuery,(err,result) => {
+//Stream Music
+app.get('/music/listen/:id', (req: Request, res: Response) =>{
+    const songQuery: string = `SELECT path FROM music WHERE musicID=${req.params.id}`
+    db.query(songQuery,(err,result) => {
         if(err){
             console.log(err)
         }else{
-            res.send(result)
-        }
-    })
-})
-
-//Fetch All Available Music
-app.get('/music', (req: Request, res: Response) =>{
-    const musicQuery: string = 'SELECT musicID, title, artist, genre FROM music'
-    db.query(musicQuery,(err,result) => {
-        if(err){
-            console.log(err)
-        }else{
-            res.send(result)
+            try{
+                const range: any = req.headers.range
+                if(!range){
+                    res.status(400).send("Requires Range Header.")
+                }
+                const musicPath: string = `./media/music/${result[0].path}.mp3`
+                const songSize: number =  fs.statSync(musicPath).size
+                const CHUNK_SIZE: number = 10**9
+                const start: number = Number(range.replace(/\D/g, ""))
+                const end: number = Math.min(start + CHUNK_SIZE, songSize - 1)
+                const contentLength: number = end - start + 1
+                type Headers = {
+                    "Content-Range": string,
+                    "Accept-Ranges": string,
+                    "Content-Length": number,
+                    "Content-Type": string,
+                }
+                const headers: Headers = {
+                    "Content-Range": `bytes ${start}-${end}/${songSize}`,
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": contentLength,
+                    "Content-Type": "video/mp4",
+                    };
+                
+                
+                res.writeHead(206, headers);
+                const musicStream: any = fs.createReadStream(musicPath)
+                musicStream.pipe(res)
+            }catch(err){
+                console.log(err)
+            }
+            
         }
     })
 })
