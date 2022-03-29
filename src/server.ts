@@ -62,10 +62,22 @@ app.get('/videos/watch/:id', (req: Request, res: Response) =>{
     })
 })
 
-//
+//Fetch All Available Videos
 app.get('/videos', (req: Request, res: Response) =>{
     const videoQuery: string = 'SELECT videoID, title, genre FROM videos'
     db.query(videoQuery,(err,result) => {
+        if(err){
+            console.log(err)
+        }else{
+            res.send(result)
+        }
+    })
+})
+
+//Fetch All Available Music
+app.get('/music', (req: Request, res: Response) =>{
+    const musicQuery: string = 'SELECT musicID, title, artist, genre FROM music'
+    db.query(musicQuery,(err,result) => {
         if(err){
             console.log(err)
         }else{
