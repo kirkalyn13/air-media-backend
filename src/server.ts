@@ -100,7 +100,7 @@ app.get('/music/listen/:id', (req: Request, res: Response) =>{
                 }
                 const musicPath: string = `./media/music/${result[0].path}.mp3`
                 const songSize: number =  fs.statSync(musicPath).size
-                const CHUNK_SIZE: number = 10**9
+                const CHUNK_SIZE: number = 10**12
                 const start: number = Number(range.replace(/\D/g, ""))
                 const end: number = Math.min(start + CHUNK_SIZE, songSize - 1)
                 const contentLength: number = end - start + 1
